@@ -21,6 +21,7 @@ components:
   schemas:
     Event:
       type: object
+      required: [ id, type, status, timestamp ]
       properties:
         id: { type: string, description: "Machine ID or token" }
         type: { type: string, enum: [ tvr, tng, tpg ], description: "Machine type" }
