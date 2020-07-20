@@ -1,0 +1,55 @@
+openapi: 3.0.1
+info:
+  title: Sample API
+  description: API description in Markdown.
+  version: 1.0.0
+paths:
+  /events:
+    post:
+      summary: Tracks selected status
+      description: Devices sends tracking info into this endpoint
+      requestBody: { $ref: "#/components/requestBodies/EventRequest" }
+      responses:
+        201:
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Event" }
+
+components:
+
+  schemas:
+    Event:
+      type: object
+      properties:
+        id: { type: string, description: "Machine ID or token" }
+        type: { type: string, enum: [ tvr, tng, tpg ], description: "Machine type" }
+        status: { type: string, enum: [ idle, playing ]}
+        comment: { type: string, description: "Comment to know" }
+        timestamp: { type: string, format: 'date-time' }
+        local_timestamp: { type: string, format: 'date-time' }
+        game: { $ref: "#/components/schemas/EventGame" }
+
+    EventGame:
+      type: object
+      required: [ id ]
+      properties:
+        id: { type: string, description: "Game ID or UUID" }
+        name: { type: string, description: "Game name" }
+
+  requestBodies:
+    EventRequest:
+      required: true
+      description: Tracking info
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [ id, type, status, local_timestamp ]
+            properties:
+              id: { $ref: "#/components/schemas/Event/properties/id" }
+              type: { $ref: "#/components/schemas/Event/properties/type" }
+              status: { $ref: "#/components/schemas/Event/properties/status" }
+              comment: { $ref: "#/components/schemas/Event/properties/comment" }
+              local_timestamp: { $ref: "#/components/schemas/Event/properties/local_timestamp" }
+              game: { $ref: "#/components/schemas/Event/properties/game" }
