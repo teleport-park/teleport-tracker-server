@@ -51,7 +51,7 @@ components:
         application/json:
           schema:
             type: object
-            required: [ id, type, status, local_timestamp ]
+            required: [ id, type, status ]
             properties:
               id: { $ref: "#/components/schemas/Event/properties/id" }
               type: { $ref: "#/components/schemas/Event/properties/type" }
