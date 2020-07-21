@@ -1,14 +1,19 @@
 import * as Koa from 'koa';
+import * as KoaCors from '@koa/cors';
 import * as KoaBodyParser from 'koa-bodyparser';
-import * as KoaStatic from 'koa-static';
 import * as KoaJsonError from 'koa-json-error';
-import * as path from 'path';
 
 export function createApplication(): Koa {
 	const app = new Koa();
 
 	// add body parser
 	app.use(KoaBodyParser({}));
+
+	// use cors
+	app.use(KoaCors({
+		allowHeaders: '*',
+		exposeHeaders: '*',
+	}));
 
 	// error handler for http responses
 	// app.use(async (ctx, next) => {

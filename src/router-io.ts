@@ -69,3 +69,25 @@ export type IApiEventCreateResponse = IApiEvent;
 export type IApiRunsResponse = IApiRun[];
 
 
+export interface IApiRunsRequestQuery {
+	l: number;
+	o: number;
+	from?: Date;
+	to?: Date;
+}
+
+export const ApiRunsRequestQuerySchema = {
+	type: 'object',
+	properties: {
+		o: {type: 'integer', minimum: 0, default: 0},
+		l: {type: 'integer', minimum: 0, default: 100},
+		from: {type: 'string', format: 'date-time'},
+		to: {type: 'string', format: 'date-time'},
+	}
+}
+
+export const ApiRunsRequestQueryValidator = (new Ajv({
+	coerceTypes: true,
+	useDefaults: true,
+})).compile(ApiRunsRequestQuerySchema);
+

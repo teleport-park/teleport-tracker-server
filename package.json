@@ -25,8 +25,11 @@
   "homepage": "https://github.com/teleport-park/teleport-tracker-server#readme",
   "dependencies": {
     "-": "0.0.1",
+    "@koa/cors": "^3.1.0",
+    "@types/faker": "^4.1.12",
     "ajv": "^6.12.3",
     "debug": "^4.1.1",
+    "faker": "^4.1.0",
     "koa": "^2.13.0",
     "koa-bodyparser": "^4.3.0",
     "koa-error": "^3.2.0",
