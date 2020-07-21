@@ -10,6 +10,9 @@
     "start": "node dist/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "engines": {
+    "node": ">=12"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/teleport-park/teleport-tracker-server.git"
@@ -21,16 +24,24 @@
   },
   "homepage": "https://github.com/teleport-park/teleport-tracker-server#readme",
   "dependencies": {
+    "-": "0.0.1",
     "ajv": "^6.12.3",
+    "debug": "^4.1.1",
     "koa": "^2.13.0",
     "koa-bodyparser": "^4.3.0",
+    "koa-error": "^3.2.0",
+    "koa-json-error": "^3.1.2",
     "koa-router": "^9.1.0",
+    "koa-static": "^5.0.0",
     "tslint": "^6.1.2",
     "typescript": "^3.9.7"
   },
   "devDependencies": {
+    "@types/debug": "^4.1.5",
     "@types/koa": "^2.11.3",
     "@types/koa-bodyparser": "^4.3.0",
-    "@types/koa-router": "^7.4.1"
+    "@types/koa-router": "^7.4.1",
+    "@types/koa-static": "^4.0.1",
+    "@types/node": "^14.0.23"
   }
 }

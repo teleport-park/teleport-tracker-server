@@ -10,6 +10,17 @@ servers:
 
 paths:
   /events:
+    get:
+      summary: Shows latest events
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Event" }
+
     post:
       summary: Tracks selected status
       description: Devices sends tracking info into this endpoint
@@ -21,9 +32,52 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/Event" }
 
+  /runs:
+    get:
+      summary: Returns list of runs
+      parameters:
+        - in: query
+          name: o
+          description: Offset for search
+          schema: { type: integer, minimum: 0, default: 0 }
+        - in: query
+          name: l
+          description: Limit for search
+          schema: { type: integer, minimum: 0, default: 100 }
+
+      responses:
+        200:
+          description: OK
+          headers:
+            Content-Range:
+              description: Content range for pagination
+              schema: { type: string , example: 'items 0-10/100' }
+            X-Total-Items:
+              description: Total items in collection
+              schema: { type: integer }
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Run"}
+            text/csv:
+              schema:
+                type: string
+
 components:
 
   schemas:
+
+    MachineType:
+      type: string
+      enum: [ tvr, tng, tpg ]
+      description: "Machine type"
+
+    MachineId:
+      type: string
+      format: uuid
+      description: "Machine unique ID"
+
     Event:
       type: object
       required: [ id, type, status, timestamp ]
@@ -42,6 +96,17 @@ components:
       properties:
         id: { type: string, description: "Game ID or UUID" }
         name: { type: string, description: "Game name" }
+
+    Run:
+      type: object
+      required: [ id, type, timestamp ]
+      properties:
+        id: { $ref: "#/components/schemas/MachineId" }
+        type: { $ref: "#/components/schemas/MachineType" }
+        location: { type: string, description: "Machine location", example: "Sochi location 1" }
+        start_at:  { type: string, format: 'date-time', description: "Game run start timestamp" }
+        end_at:  { type: string, format: 'date-time', description: "Game run end timestamp" }
+#        game: { $ref: "#/" }
 
   requestBodies:
     EventRequest:
