@@ -44,6 +44,14 @@ paths:
           name: l
           description: Limit for search
           schema: { type: integer, minimum: 0, default: 100 }
+        - in: query
+          name: from
+          description: Date from
+          schema: { type: string, format: date-time }
+        - in: query
+          name: to
+          description: Date to
+          schema: { type: string, format: date-time }
 
       responses:
         200:
@@ -99,14 +107,14 @@ components:
 
     Run:
       type: object
-      required: [ id, type, timestamp ]
+      required: [ id, type, timestamp, game ]
       properties:
         id: { $ref: "#/components/schemas/MachineId" }
         type: { $ref: "#/components/schemas/MachineType" }
         location: { type: string, description: "Machine location", example: "Sochi location 1" }
         start_at:  { type: string, format: 'date-time', description: "Game run start timestamp" }
         end_at:  { type: string, format: 'date-time', description: "Game run end timestamp" }
-#        game: { $ref: "#/" }
+        game: { $ref: "#/components/schemas/EventGame" }
 
   requestBodies:
     EventRequest:
