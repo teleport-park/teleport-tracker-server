@@ -83,6 +83,7 @@ export const ApiRunsRequestQuerySchema = {
 		l: {type: 'integer', minimum: 0, default: 100},
 		from: {type: 'string', format: 'date-time'},
 		to: {type: 'string', format: 'date-time'},
+		export: { type: 'boolean', default: false },
 	}
 }
 
