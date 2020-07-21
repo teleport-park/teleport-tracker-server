@@ -1,5 +1,4 @@
-*
+/*
 !dist
-!package*.json
-!ui
 !assets
+!package-lock.json
