@@ -14,12 +14,14 @@ export interface IApiEvent {
 	game?: {
 		id: string;
 		name?: string;
+		players: number;
 	};
 }
 
 export interface IApiGame {
 	id: string;
 	name?: string;
+	players?: number;
 }
 
 export interface IApiRun {
@@ -57,6 +59,7 @@ export const ApiEventRequestSchema = {
 			properties: {
 				id: {type: 'string'},
 				name: {type: 'string'},
+				players: {type: 'number'},
 			},
 		},
 	}
@@ -83,7 +86,7 @@ export const ApiRunsRequestQuerySchema = {
 		l: {type: 'integer', minimum: 0, default: 100},
 		from: {type: 'string', format: 'date-time'},
 		to: {type: 'string', format: 'date-time'},
-		export: { type: 'boolean', default: false },
+		export: {type: 'boolean', default: false},
 	}
 }
 
