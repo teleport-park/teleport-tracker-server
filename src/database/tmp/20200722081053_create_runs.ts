@@ -1,10 +1,11 @@
 import * as Knex from 'knex';
+import {MACHINE_TYPE_TYPENAME} from '../migrations/20200722043959_create_events';
 
 export const TABLE_NAME = 'game_runs';
 
 export const up = async (knex: Knex) => {
 	await knex.schema.createTable(TABLE_NAME, (tableBuilder) => {
-		tableBuilder.comment('Events from machines are stored here');
+		tableBuilder.comment('Runs from machines are stored here');
 
 		// Basic fields
 		tableBuilder.bigIncrements('id')
@@ -20,7 +21,7 @@ export const up = async (knex: Knex) => {
 		tableBuilder.string('machine_id')
 			.notNullable();
 
-		tableBuilder.string('machine_type', 10)
+		tableBuilder.specificType('machine_type', MACHINE_TYPE_TYPENAME)
 			.notNullable();
 
 		// Run info
@@ -44,8 +45,6 @@ export const up = async (knex: Knex) => {
 		// Comment
 		tableBuilder.string('comment', 200)
 			.nullable();
-
-
 
 	});
 }

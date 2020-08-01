@@ -16,7 +16,7 @@ module.exports = {
 
     development: {
         ...baseConfig,
-        connection: 'postgresql://tracker:tracker@35.239.179.213:5432/tracker',
+        connection: 'postgresql://tracker:tracker@35.192.114.206:5432/tracker',
         debug: false,
     },
 
