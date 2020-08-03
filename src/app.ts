@@ -17,8 +17,15 @@ logger('Binding routers');
 app.use(createEventsRouter(db).prefix('/').routes());
 app.use(createMachinesRouter(db).prefix('/').routes());
 
-app.listen(appPort);
+const httpServer = app.listen(appPort);
 app.on('listening', (addr) => logger('Application started listening %s', appPort));
+
+
+process.on('SIGTERM', async () => {
+	logger('Termination signal received');
+	await new Promise((res, rej) => httpServer.close((err) => err ? rej(err) : res()));
+	await db.destroy();
+})
 
 
 // get latest events from database

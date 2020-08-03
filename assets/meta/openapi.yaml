@@ -91,6 +91,7 @@ components:
       required: [ id, type, status, timestamp ]
       properties:
         id: { type: string, description: "Machine ID or token" }
+        sub_id: { type: string, description: "Machine SubID (for multi-seat)" }
         type: { type: string, enum: [ tvr, tng, tpg ], description: "Machine type" }
         status: { type: string, enum: [ idle, playing ]}
         comment: { type: string, description: "Comment to know" }
@@ -127,6 +128,7 @@ components:
             required: [ id, type, status ]
             properties:
               id: { $ref: "#/components/schemas/Event/properties/id" }
+              sub_id: { $ref: "#/components/schemas/Event/properties/sub_id" }
               type: { $ref: "#/components/schemas/Event/properties/type" }
               status: { $ref: "#/components/schemas/Event/properties/status" }
               comment: { $ref: "#/components/schemas/Event/properties/comment" }

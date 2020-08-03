@@ -21,7 +21,7 @@ function createApiMachineFromDatabaseMachine(dbMachine: IDatabaseMachine): IApiM
 		id: dbMachine.machine_id,
 		type: dbMachine.machine_type,
 		address: dbMachine.api_url || undefined,
-		location: dbMachine.location || undefined,
+		location: dbMachine.location_name || undefined,
 		use: dbMachine.use || undefined,
 	}
 }

@@ -1,66 +1,39 @@
 import * as debug from 'debug';
-import {EventEmitter} from 'events';
 
-interface MachineState {
-	status: string;
-	updated: number;
-	touch: number;
+export type DetectorMachineId = [string, string, string];
+
+export interface IDetectorMachineState {
+	status: 'playing' | 'idle';
+	run: IDetectorSession;
 }
 
-export interface IDetectorEvents extends EventEmitter {
-	on<T>(event: 'start' | 'stop', listener: (meta: T) => void);
+export interface IDetectorSession {
+	startedAt: Date;
+	stoppedAt: Date;
 }
 
-export class Detector extends EventEmitter implements IDetectorEvents {
-
+export class Detector<M> {
 	protected readonly logger: debug.IDebugger = debug('detector');
-	protected readonly machines: Map<string, MachineState>
+	protected readonly machines: Map<M, IDetectorMachineState> = new Map();
+	protected readonly sessions: IDetectorSession[] = [];
 
-	public constructor() {
-		super();
-		this.machines = new Map();
-		this.logger('Initialized');
-	}
 
-	public receive<T>(id: string, status: string, date: Date, meta?: T) {
-		// TODO something
+	// public register();
 
-		// take ID and detect if machine created
-		if (!this.machines.has(id)) {
-			this.machines.set(id, {
+	public feed(machine: M, status?) {
+
+		// find machine
+		if (!this.machines.has(machine)) {
+			this.logger('New machine found: %o', machine);
+			this.machines.set(machine, {
 				status: null,
-				updated: null,
-				touch: Date.now(),
+				run: null,
 			});
-			this.logger('New machine %o created', id);
 		}
 
-		const eventTimestamp = date.getTime();
-		// receive machine state
-		const machineState = this.machines.get(id);
-		machineState.touch = Date.now();
+		// instance
+		const instance = this.machines.get(machine);
 
-		// here's transition to machine state
-		if (machineState.status === status) {
-			// do nothing
-			return;
-		} else if (machineState.updated > eventTimestamp) {
-			this.logger('Event is earlier than latest one');
-		}
-
-		// status changed, define process
-		this.logger('Status changed %o => %o', machineState.status, status);
-
-		if (status === 'playing') {
-			this.logger('Game run detected')
-			setImmediate(() => this.emit('start', meta));
-		} else if (machineState.status !== null) {
-			this.logger('Game run stopped')
-			setImmediate(() => this.emit('stop', meta));
-		}
-
-		machineState.status = status;
-		machineState.updated = eventTimestamp;
 
 	}
 
