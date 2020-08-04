@@ -16,6 +16,14 @@ async.forever(async (next) => {
 		await trx.rollback();
 		throw e;
 	}
+
+	if (num > 0) {
+		return next();
+	} else {
+		logger('No events processed, waiting for new');
+		setTimeout(next, 5000);
+	}
+
 }, (err) => {
 	throw err;
 });

@@ -9,7 +9,6 @@ export function createRunsRouter(db: DatabaseConnection): KoaRouter {
 
 	const router = new Router();
 
-
 	async function getRuns(timeFrom?: Date, timeTo?: Date, limit?: number, offset?: number): Promise<[any[], number]> {
 		const baseBuilder = db.table<IDatabaseGameRun>('game_runs')
 		if (timeFrom) {
@@ -23,7 +22,7 @@ export function createRunsRouter(db: DatabaseConnection): KoaRouter {
 		const resultsBuilder = baseBuilder.clone()
 			.leftJoin(db.raw('machines ON game_runs.machine_id = machines.id'))
 			.select(['game_runs.*', 'machines.machine_type', 'machines.location_name', 'machines.machine_id'])
-			.orderBy('start_at', 'asc');
+			.orderBy('start_at', 'desc');
 
 		if (limit) {
 			resultsBuilder.limit(limit);
