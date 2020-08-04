@@ -18,7 +18,7 @@ export interface IDatabaseEvent {
 	game_players: number | null;
 
 	comment: string | null;
-	is_dispatched: boolean;
+	dispatched_at: Date;
 }
 
 export interface IDatabaseMachine {
@@ -28,6 +28,7 @@ export interface IDatabaseMachine {
 	api_url: string | null;
 	location_name: string | null;
 	use: string | null;
+	touch_at?: Date;
 }
 
 export interface IDatabaseMachineState {
@@ -35,6 +36,8 @@ export interface IDatabaseMachineState {
 	sub_id: string | null;
 	updated_at: Date;
 	status: IDatabaseMachineStatus;
+	touch_at?: Date;
+	game_run_id: IDatabaseGameRun['id'];
 }
 
 export interface IDatabaseGameRun {

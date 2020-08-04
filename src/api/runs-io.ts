@@ -1,7 +1,5 @@
 import * as Ajv from 'ajv';
-
-export type IApiMachineType = 'tvr' | 'tng' | 'tpg';
-export type IApiMachineId = string;
+import {IApiMachine} from './machines-io';
 
 export interface IApiGame {
 	id: string;
@@ -10,18 +8,15 @@ export interface IApiGame {
 }
 
 export interface IApiRun {
-	id: IApiMachineId;
-	type: IApiMachineType;
+	id: string;
+	type: IApiMachine['type'];
 	location?: string;
 	start_at: Date;
 	end_at: Date;
 	game: IApiGame;
 }
 
-
-
 export type IApiRunsResponse = IApiRun[];
-
 
 export interface IApiRunsRequestQuery {
 	l: number;
@@ -45,4 +40,3 @@ export const ApiRunsRequestQueryValidator = (new Ajv({
 	coerceTypes: true,
 	useDefaults: true,
 })).compile(ApiRunsRequestQuerySchema);
-

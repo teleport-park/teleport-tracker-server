@@ -1,5 +1,5 @@
 import * as Ajv from 'ajv';
-import {IApiGame} from './router-io';
+import {IApiGame} from './runs-io';
 import {JSONSchema7} from 'json-schema';
 
 export interface IApiEvent {

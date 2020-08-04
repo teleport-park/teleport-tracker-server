@@ -29,6 +29,10 @@ export const up = async (knex: Knex) => {
 			.nullable();
 		tableBuilder.string('use')
 			.nullable();
+
+		tableBuilder.timestamp('touch_at')
+			.notNullable()
+			.defaultTo(knex.fn.now());
 	});
 
 }

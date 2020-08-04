@@ -1,12 +1,32 @@
+import * as async from 'async';
 import {db, defaultLogger} from './bootstrap';
-import {IDatabaseEvent, IDatabaseMachine, IDatabaseMachineStatus} from './database';
-import {Detector} from './detector-v2/detector';
+import {IDatabaseEvent, IDatabaseGameRun, IDatabaseMachine, IDatabaseMachineState} from './database';
+import {Transaction} from 'knex';
 
 const logger = defaultLogger.extend('detector');
 
-(async () => {
+async.forever(async (next) => {
+	let num: number;
+	const trx = await db.transaction();
+	try {
+		num = await detect(trx, 50000);
+		logger('Processed %s events', num);
+		await trx.commit();
+	} catch (e) {
+		await trx.rollback();
+		throw e;
+	}
+}, (err) => {
+	throw err;
+});
 
-	const trx = db;
+async function detect(trx: Transaction, bulkSize: number = 10000): Promise<number> {
+
+	// drop dbs
+	// logger('Dropping existing runs and states');
+	// await trx.table('machines_state').delete();
+	// await trx.table('game_runs').delete();
+	// await trx.table('machine_events').update('dispatched_at', null).whereNotNull('dispatched_at');
 
 	logger('Starting iteration');
 
@@ -14,180 +34,100 @@ const logger = defaultLogger.extend('detector');
 	const events: IDatabaseEvent[] = await trx.table('machine_events')
 		.select()
 		.orderBy('created_at', 'asc')
-		// .where('is_dispatched', false)
-		.limit(10000);
+		.whereNull('dispatched_at')
+		.where('created_at', '<', trx.raw('NOW() - INTERVAL \'3m\''))
+		.limit(bulkSize);
 	logger('Loaded %i events from database', events.length);
 
-	// convert to structure of events
-	const split = events.reduce<IMachine[]>((machines, event) => {
-		const {machine_id, machine_type, machine_subid} = event;
+	const machinesCache: IDatabaseMachine[] = [];
+	const machineStatesCache: IDatabaseMachineState[] = [];
 
-		// find machine in acc or create it
-		let machine = machines.find((s) => (s.id.id === machine_id && s.id.type === machine_type && s.id.subId === machine_subid));
-		if (!machine) {
-			machine = {
-				id: {id: machine_id, type: machine_type, subId: machine_subid},
-				// status: {status: null, timestamp: null},
-				events: [],
-			};
-			machines.push(machine);
+	for (const event of events) {
+
+		if (event.machine_subid === null) {
+			event.machine_subid = '';
 		}
 
-		// add event to machine
-		machine.events.push({
-			id: event.id,
-			status: event.machine_status,
-			timestamp: event.created_at,
-			comment: event.comment,
-			...((event.game_id || event.game_name || event.game_players)
-				? {game: {id: event.game_id, name: event.game_name, players: event.game_players}}
-				: {})
-		});
+		// find machine for event
+		let machine = machinesCache.find((m) => m.machine_id === event.machine_id && m.machine_type === event.machine_type);
+		if (!machine) {
+			// create new machine and put it into database and cache
+			machine = await trx.raw(
+				'INSERT INTO machines (machine_id, machine_type) VALUES (?, ?) ON CONFLICT (machine_id, machine_type) DO UPDATE SET touch_at = NOW() RETURNING *;',
+				[event.machine_id, event.machine_type],
+			).then((resp) => resp.rows[0]);
+			machinesCache.push(machine);
+			logger('New session machine detected: (%s, %s) => %s', machine.machine_id, machine.machine_type, machine.id);
+		}
+		if (!machine) {
+			throw new Error('Unable to process event due no machine is found');
+		}
 
-		return machines;
-	}, []);
+		// find state for event
+		let machineState = machineStatesCache.find((ms) => event.machine_subid === ms.sub_id && machine.id === ms.id);
+		if (!machineState) {
+			machineState = await trx.raw(
+				'INSERT INTO machines_state (id, sub_id) VALUES (?, ?) ON CONFLICT (id, sub_id) DO UPDATE SET touch_at = NOW() RETURNING *;',
+				[machine.id, event.machine_subid]
+			).then((resp) => resp.rows[0]);
+			machineStatesCache.push(machineState);
+			logger('New session machine state detected: (%s, %s, %s) => %s', machineState.id, machineState.sub_id, machineState.status, machineState.id);
+		}
+		if (!machineState) {
+			throw new Error('Unable to process event due no machine state is set');
+		}
 
+		// Start processing event details
+		// TODO skip if event earlier than latest ones
+		// if (machineState.updated_at != null && event.created_at.getTime() < machineState.updated_at.getTime()) {
+		// 	logger('Detected event earlier than current machine state');
+		// 	continue;
+		// }
 
-	// TODO fulfill with status from database with foreach
-
-
-	for (const machine of split) {
-		// TODO load machine current status and game run
-
-
-		for (const event of machine.events) {
-
-			switch (event.status) {
-
-				case 'idle':
-					switch (machine.status.status) {
-						// No action here, just set action
-						case 'idle':
-							break;
-
-						// Start new game run on machine
-						case 'playing':
-							// TODO start new game run
-							logger('Starting game run');
-							break;
-
-						// Do nothing
-						case 'error':
-							break;
-
-						default:
-							throw new Error('Unknown machine status: ' + machine.status.status);
-					}
-					break;
-
-				case 'playing':
-					switch (machine.status.status) {
-
-						// Stop existing game run
-						case 'idle':
-							logger('Stopping game run');
-							break;
-
-						// Check game matches
-						case 'playing':
-						case 'error':
-							// TODO if game matches, if not - start new run, stop existing run if any
-							break;
-
-						default:
-							throw new Error('Unknown machine status: ' + machine.status.status);
-					}
-					break;
-
-				// Ignore case, error happen on machine, don't change anything
-				case 'error':
-					switch (machine.status.status) {
-						case 'idle':
-							break;
-						case 'playing':
-							break;
-						case 'error':
-							break;
-						default:
-							throw new Error('Unknown machine status: ' + machine.status.status);
-					}
-					break;
-				default:
-					throw new Error('Unknown status');
+		if (event.machine_status === 'playing' && machineState.status === 'idle') {
+			// Stop existing game run
+			if (machineState.game_run_id) {
+				await trx.table('game_runs').update({end_at: event.created_at}).where('id', machineState.game_run_id);
+				machineState.game_run_id = null;
 			}
 
+			// Start new game run
+			const [gameRun] = await trx.table<IDatabaseGameRun>('game_runs').insert({
+				machine_id: machine.id,
+				start_at: event.created_at,
+				game_id: event.game_id,
+				game_name: event.game_name,
+				game_players: event.game_players,
+				comment: event.comment,
+			}).returning('*');
+
+			machineState.game_run_id = gameRun.id;
+			machineState.status = 'playing';
+		} else if (event.machine_status === 'idle' && machineState.status === 'playing') {
+			// Stop existing game run
+			if (machineState.game_run_id) {
+				await trx.table('game_runs').update({end_at: event.created_at}).where('id', machineState.game_run_id);
+				machineState.game_run_id = null;
+			}
+			machineState.status = 'idle';
 		}
+
+		machineState.updated_at = event.created_at;
 
 	}
 
+	// mark events as processed
+	await trx.table<IDatabaseEvent>('machine_events').update('dispatched_at', trx.fn.now()).whereIn('id', events.map((e) => e.id));
 
-	// 	// find machine
-	// 	let machine = machines.find((m) => m.machine_id === event.machine_id && m.machine_type === event.machine_type);
-	// 	if (!machine) {
-	// 		// add new machine to the list
-	// 		machine = {
-	// 			machine_id: event.machine_id,
-	// 			machine_type: event.machine_type,
-	// 			machine_status: 'idle',
-	// 			game_id: null,
-	// 			game_name: null,
-	// 			updated_at: null,
-	// 		}
-	// 		machines.push(machine);
-	// 		logger('New machine added: %s (%s)', machine.machine_id, machine.machine_type);
-	// 	}
-	// 	// TODO dispatching
-	// 	// TODO FSM run
-	// }
+	// saving states
+	await Promise.all(machineStatesCache.map((s) => {
+		return trx.table<IDatabaseMachineState>('machines_state').update({
+			status: s.status,
+			updated_at: s.updated_at,
+		}).where({id: s.id, sub_id: s.sub_id});
+	}))
 
-	// Update database with new status map
-	// TODO
-
-})().then(() => {
-	logger('Done');
-	return db.destroy();
-});
-
-
-interface IMachine {
-	id: IMachineId;
-	status?: IMachineStatus;
-	events: IMachineEvent[];
-	run?: IMachineGameRun;
+	return events.length;
 }
-
-interface IMachineId {
-	id: string;
-	type: string;
-	subId: string;
-}
-
-interface IMachineStatus {
-	status: 'idle' | 'playing' | 'error';
-	game?: IMachineGame;
-	timestamp: Date;
-}
-
-interface IMachineGame {
-	id: string;
-	name: string;
-	players: number;
-}
-
-interface IMachineEvent extends IMachineStatus {
-	id: number;
-	comment: string;
-}
-
-interface IMachineGameRun {
-	game: IMachineGame;
-	startedAt: Date;
-	endedAt: Date;
-}
-
-function matchStatus(a: IMachineStatus, b: IMachineStatus): boolean {
-	return false;
-}
-
 
 

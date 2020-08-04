@@ -1,5 +1,5 @@
 import {db, defaultLogger} from './bootstrap';
-import {createApplication, createEventsRouter, createMachinesRouter} from './api';
+import {createApplication, createEventsRouter, createMachinesRouter, createRunsRouter} from './api';
 import * as KoaStatic from 'koa-static';
 import * as path from 'path';
 
@@ -16,6 +16,7 @@ app.use(KoaStatic(path.join(__dirname, '../assets/meta'), {index: false}));
 logger('Binding routers');
 app.use(createEventsRouter(db).prefix('/').routes());
 app.use(createMachinesRouter(db).prefix('/').routes());
+app.use(createRunsRouter(db).prefix('/').routes());
 
 const httpServer = app.listen(appPort);
 app.on('listening', (addr) => logger('Application started listening %s', appPort));
